@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body style = "background-color: #212121; color: #fff;">
+    
+</body>
+<script>
+    const div = document.createElement('div')          // creates a <div> in memory
+    console.log(div);
+    div.className = "main"    // to initiate a class
+    div.id = Math.round(Math.random() * 10 + 1)     // to initiate a id
+    div.setAttribute("title" , "generated title")    // better way to do things
+    div.style.backgroundColor = "green"
+    div.style.padding = "12px"
+    div.innerText = "chai aur code"                                   // it takes two round trips 
+    const addText = document.createTextNode("Chai aur code")              // same thing but anpther method
+    div.appendChild(addText)
+</script>
+</html>

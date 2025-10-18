@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sudoku Solver – Retro AI</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #121212;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #ffdd57;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(9, 40px);
+      grid-template-rows: repeat(9, 40px);
+      gap: 2px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      text-align: center;
+      border: 1px solid #555;
+      background-color: #1e1e1e;
+      color: #eee;
+    }
+
+    input.prefilled {
+      background-color: #333;
+      font-weight: bold;
+      color: #ddd;
+    }
+
+    input.solved {
+      animation: solveStep 0.15s ease-in-out;
+      background-color: #282828;
+    }
+
+    @keyframes solveStep {
+      from {
+        background-color: #2a2a2a;
+      }
+      to {
+        background-color: #444;
+      }
+    }
+
+    .buttons {
+      margin: 15px 0;
+    }
+
+    button {
+      background-color: #ffdd57;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background-color: #ffcc00;
+    }
+
+    .analysis {
+      margin-top: 20px;
+      border-top: 1px solid #444;
+      padding-top: 10px;
+      max-width: 400px;
+      width: 100%;
+      text-align: left;
+      font-size: 14px;
+      background-color: #1c1c1c;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🧩 Sudoku Solver</h1>
+  <div id="grid"></div>
+  <div class="buttons">
+    <button onclick="solveSudokuWithAnimation()">Solve</button>
+    <button onclick="resetBoard()">Reset</button>
+  </div>
+  <div class="analysis" id="analysis">
+    <strong>Analysis:</strong>
+    <p id="timeTaken">⏱ Time: Not calculated</p>
+    <p id="backtracks">🔁 Backtracks: 0</p>
+    <p id="status">🧠 Status: Waiting to solve...</p>
+  </div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const timeDisplay = document.getElementById("timeTaken");
+    const backtrackDisplay = document.getElementById("backtracks");
+    const statusDisplay = document.getElementById("status");
+
+    let cells = [];
+    let backtrackCount = 0;
+
+    let presetBoard = [
+      [5, 3, 0, 0, 7, 0, 0, 0, 0],
+      [6, 0, 0, 1, 9, 5, 0, 0, 0],
+      [0, 9, 8, 0, 0, 0, 0, 6, 0],
+      [8, 0, 0, 0, 6, 0, 0, 0, 3],
+      [4, 0, 0, 8, 0, 3, 0, 0, 1],
+      [7, 0, 0, 0, 2, 0, 0, 0, 6],
+      [0, 6, 0, 0, 0, 0, 2, 8, 0],
+      [0, 0, 0, 4, 1, 9, 0, 0, 5],
+      [0, 0, 0, 0, 8, 0, 0, 7, 9]
+    ];
+
+    function createGrid() {
+      grid.innerHTML = "";
+      cells = [];
+      for (let i = 0; i < 81; i++) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.maxLength = 1;
+        input.id = `cell-${i}`;
+        input.oninput = () => {
+          input.value = input.value.replace(/[^1-9]/g, "");
+        };
+        grid.appendChild(input);
+        cells.push(input);
+      }
+    }
+
+    function setInitialBoard(board) {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          const index = i * 9 + j;
+          const value = board[i][j];
+          const cell = cells[index];
+          if (value !== 0) {
+            cell.value = value;
+            cell.disabled = true;
+            cell.classList.add("prefilled");
+          } else {
+            cell.value = "";
+            cell.disabled = false;
+            cell.classList.remove("prefilled");
+          }
+        }
+      }
+    }
+
+    function readBoard() {
+      let board = [];
+      for (let i = 0; i < 9; i++) {
+        board.push([]);
+        for (let j = 0; j < 9; j++) {
+          const index = i * 9 + j;
+          const value = parseInt(cells[index].value);
+          board[i].push(isNaN(value) ? 0 : value);
+        }
+      }
+      return board;
+    }
+
+    function isValid(board, row, col, num) {
+      for (let i = 0; i < 9; i++) {
+        if (board[row][i] === num || board[i][col] === num ||
+          board[3 * Math.floor(row / 3) + Math.floor(i / 3)]
+          [3 * Math.floor(col / 3) + (i % 3)] === num)
+          return false;
+      }
+      return true;
+    }
+
+    async function solveSudoku(board) {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            for (let num = 1; num <= 9; num++) {
+              if (isValid(board, row, col, num)) {
+                board[row][col] = num;
+                backtrackCount++;
+                updateCell(row, col, num);
+                await new Promise((r) => setTimeout(r, 20));
+
+                if (await solveSudoku(board)) return true;
+
+                board[row][col] = 0;
+                updateCell(row, col, "");
+                await new Promise((r) => setTimeout(r, 20));
+              }
+            }
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function updateCell(row, col, val) {
+      const index = row * 9 + col;
+      cells[index].value = val;
+      if (!cells[index].classList.contains("prefilled")) {
+        cells[index].classList.add("solved");
+      }
+    }
+
+    async function solveSudokuWithAnimation() {
+      const board = readBoard();
+      backtrackCount = 0;
+      const start = performance.now();
+      statusDisplay.textContent = "🧠 Status: Solving...";
+      const solved = await solveSudoku(board);
+      const end = performance.now();
+
+      timeDisplay.textContent = `⏱ Time: ${(end - start).toFixed(2)} ms`;
+      backtrackDisplay.textContent = `🔁 Backtracks: ${backtrackCount}`;
+      statusDisplay.textContent = solved ? "✅ Status: Solved successfully!" : "❌ Status: No solution found.";
+    }
+
+    function resetBoard() {
+      setInitialBoard(presetBoard);
+      timeDisplay.textContent = "⏱ Time: Not calculated";
+      backtrackDisplay.textContent = "🔁 Backtracks: 0";
+      statusDisplay.textContent = "🧠 Status: Waiting to solve...";
+    }
+
+    createGrid();
+    setInitialBoard(presetBoard);
+  </script>
+</body>
+
+</html>

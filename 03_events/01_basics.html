@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>html events</title>
+</head>
+<body style="background-color: #414141; color: blanchedalmond;">
+    <h2>Amazing images</h2>
+    <div>
+        <ul id="images">
+            <li><img width="200px" id="house" src="https://images.pexels.com/photos/12069742/pexels-photo-12069742.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt=""></li>
+            <li><img width="200px" id="tree" src="https://images.pexels.com/photos/31129446/pexels-photo-31129446/free-photo-of-blooming-magnolia-branches-on-gray-background.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt=""></li>
+            <li><img width="200px" id="clean" src="https://images.pexels.com/photos/30433363/pexels-photo-30433363/free-photo-of-charming-italian-courtyard-with-pink-bistro-chairs.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt=""></li>
+            <li><img width="200px" id="photoshop" src="https://images.pexels.com/photos/31391838/pexels-photo-31391838/free-photo-of-breathtaking-coastal-view-in-puerto-de-la-cruz.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt=""></li>
+            <li><img width="200px" id="city" src="https://images.pexels.com/photos/28536200/pexels-photo-28536200/free-photo-of-scenic-view-of-lake-through-leafy-archway.jpeg" alt=""></li>
+            <li><a style="color: blanchedalmond;" href="https://google.com" id="google">Google</a></li>
+        </ul>
+    </div>
+</body>
+<script>
+    // document.getElementById('house').onclick = function (){
+    //     alert("clicked on house image")
+    // }                                // comes with less features
+    
+    // document.getElementById('images').addEventListener('click', function(e){
+    //     // alert("clicked inside the ul")
+    //     console.log("clicked inside the ul");
+    // }, false)
+    
+    // type, timestamp, defaultPrevented
+    //target, toElement, srcElement, currentTarget, clientX, clientY, screenY, altkey, ctrlkey, keyCode
+    
+    
+    // document.getElementById('house').addEventListener('click', function(e){
+    //     // alert("clicked on house image")
+    //     console.log("clicked on house image");
+    //     e.stopPropagation()        // sirf ek o/p aayega 
+    // }, false)            // true -> capturing (top to bottom)
+                        // false -> bubbling
+
+    // document.getElementById('google').addEventListener('click', function(e){
+    //     e.preventDefault();
+    //     e.stopPropagation();              // wih this it will not print clicked inside url
+    //     console.log("google clicked");
+    // }, false)
+
+    // document.querySelector('#images').addEventListener('click',function(e){
+    //     console.log(e.target.parentNode);
+        
+    //     let removeIt = e.target.parentNode
+    //     removeIt.remove()
+    //     // removeIt.parentNode.removeChild(removeIt)
+    // }, false)
+
+
+    document.querySelector('#images').addEventListener('click',function(e){
+        console.log(e.target.tagName);
+            if(e.target.tagName === 'IMG'){
+                console.log(e.target.id);
+                let removeIt = e.target.parentNode
+                removeIt.remove()
+            }
+    }, false)
+
+</script>
+</html>

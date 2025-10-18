@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sudoku Solver</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #1e1e1e;
+      color: #fff;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      gap: 20px;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(9, 40px);
+      grid-template-rows: repeat(9, 40px);
+      gap: 2px;
+      background-color: #444;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    input {
+      width: 40px;
+      height: 40px;
+      text-align: center;
+      font-size: 18px;
+      border: none;
+      background-color: #1e1e1e;
+      color: #fff;
+      outline: none;
+      transition: background 0.3s ease;
+    }
+    input.prefilled {
+      background-color: #333;
+      font-weight: bold;
+      color: #ddd;
+    }
+    input.filled {
+      background-color: #2a2;
+    }
+    .buttons {
+      margin-top: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      background-color: #555;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #777;
+    }
+    .side-panel {
+      background-color: #2a2a2a;
+      padding: 20px;
+      border-radius: 10px;
+      width: 250px;
+    }
+    .side-panel h2 {
+      font-size: 18px;
+      border-bottom: 1px solid #555;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+    }
+    .side-panel p {
+      font-size: 14px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="grid" id="grid"></div>
+    <div class="buttons">
+      <button onclick="solveSudokuAnimated()">Solve</button>
+      <button onclick="seeSolution()">See Solution</button>
+      <button onclick="resetBoard()">Reset</button>
+      <button onclick="generateNewBoard()">New Puzzle</button>
+    </div>
+  </div>
+  <div class="side-panel">
+    <h2>Analysis</h2>
+    <p><strong>Steps:</strong> <span id="steps">0</span></p>
+    <p><strong>Time:</strong> <span id="time">0</span> ms</p>
+    <p><strong>Status:</strong> <span id="status">Not started</span></p>
+  </div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    let cells = [];
+    let steps = 0;
+    let presetBoard = [];
+
+    const sampleBoards = [
+      [
+        [5, 3, 0, 0, 7, 0, 0, 0, 0],
+        [6, 0, 0, 1, 9, 5, 0, 0, 0],
+        [0, 9, 8, 0, 0, 0, 0, 6, 0],
+        [8, 0, 0, 0, 6, 0, 0, 0, 3],
+        [4, 0, 0, 8, 0, 3, 0, 0, 1],
+        [7, 0, 0, 0, 2, 0, 0, 0, 6],
+        [0, 6, 0, 0, 0, 0, 2, 8, 0],
+        [0, 0, 0, 4, 1, 9, 0, 0, 5],
+        [0, 0, 0, 0, 8, 0, 0, 7, 9]
+      ],
+      [
+        [0, 0, 0, 2, 6, 0, 7, 0, 1],
+        [6, 8, 0, 0, 7, 0, 0, 9, 0],
+        [1, 9, 0, 0, 0, 4, 5, 0, 0],
+        [8, 2, 0, 1, 0, 0, 0, 4, 0],
+        [0, 0, 4, 6, 0, 2, 9, 0, 0],
+        [0, 5, 0, 0, 0, 3, 0, 2, 8],
+        [0, 0, 9, 3, 0, 0, 0, 7, 4],
+        [0, 4, 0, 0, 5, 0, 0, 3, 6],
+        [7, 0, 3, 0, 1, 8, 0, 0, 0]
+      ]
+    ];
+
+    function generateNewBoard() {
+      presetBoard = JSON.parse(JSON.stringify(sampleBoards[Math.floor(Math.random() * sampleBoards.length)]));
+      setInitialBoard(presetBoard);
+    }
+
+    for (let i = 0; i < 81; i++) {
+      let input = document.createElement("input");
+      input.type = "text";
+      input.maxLength = 1;
+      input.id = `cell-${i}`;
+      input.oninput = () => {
+        input.value = input.value.replace(/[^1-9]/g, "");
+      };
+      grid.appendChild(input);
+      cells.push(input);
+    }
+
+    function setInitialBoard(board) {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          const index = i * 9 + j;
+          const value = board[i][j];
+          const cell = cells[index];
+          if (value !== 0) {
+            cell.value = value;
+            cell.disabled = true;
+            cell.classList.add("prefilled");
+          } else {
+            cell.value = "";
+            cell.disabled = false;
+            cell.classList.remove("prefilled");
+          }
+        }
+      }
+      document.getElementById("steps").innerText = 0;
+      document.getElementById("status").innerText = "Ready";
+    }
+
+    function getBoardFromInputs() {
+      let board = [];
+      for (let i = 0; i < 9; i++) {
+        let row = [];
+        for (let j = 0; j < 9; j++) {
+          let val = cells[i * 9 + j].value;
+          row.push(val === "" ? 0 : parseInt(val));
+        }
+        board.push(row);
+      }
+      return board;
+    }
+
+    function resetBoard() {
+      setInitialBoard(presetBoard);
+    }
+
+    function isValid(board, row, col, num) {
+      for (let i = 0; i < 9; i++) {
+        if (board[row][i] === num || board[i][col] === num || board[3 * Math.floor(row / 3) + Math.floor(i / 3)][3 * Math.floor(col / 3) + i % 3] === num) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    async function solveSudokuAnimated() {
+      let board = getBoardFromInputs();
+      steps = 0;
+      let startTime = performance.now();
+      let success = await solve(board);
+      let endTime = performance.now();
+      document.getElementById("time").innerText = Math.floor(endTime - startTime);
+      document.getElementById("status").innerText = success ? "Solved" : "Unsolvable";
+    }
+
+    async function solve(board) {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            for (let num = 1; num <= 9; num++) {
+              if (isValid(board, row, col, num)) {
+                board[row][col] = num;
+                cells[row * 9 + col].value = num;
+                cells[row * 9 + col].classList.add("filled");
+                steps++;
+                document.getElementById("steps").innerText = steps;
+                await new Promise(r => setTimeout(r, 20));
+                if (await solve(board)) return true;
+                board[row][col] = 0;
+                cells[row * 9 + col].value = "";
+              }
+            }
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function seeSolution() {
+      let board = getBoardFromInputs();
+      if (solveInstant(board)) {
+        setInitialBoard(board);
+        document.getElementById("status").innerText = "Solved Instantly";
+      } else {
+        document.getElementById("status").innerText = "Unsolvable";
+      }
+    }
+
+    function solveInstant(board) {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            for (let num = 1; num <= 9; num++) {
+              if (isValid(board, row, col, num)) {
+                board[row][col] = num;
+                if (solveInstant(board)) return true;
+                board[row][col] = 0;
+              }
+            }
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    window.onload = generateNewBoard;
+  </script>
+</body>
+</html>

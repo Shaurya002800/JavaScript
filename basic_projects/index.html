@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sudoku Solver - Newspaper Style</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: white;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #ddd;
+    }
+
+    #sudoku-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 40px);
+      grid-template-rows: repeat(9, 40px);
+      gap: 2px;
+      border: 4px solid #ccc;
+    }
+
+    input {
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      text-align: center;
+      border: 1px solid #555;
+      background-color: #000;
+      color: #fff;
+    }
+
+    input:focus {
+      outline: none;
+      border: 2px solid #66ff66;
+    }
+
+    input.prefilled {
+      background-color: #333;
+      font-weight: bold;
+      color: #ddd;
+    }
+
+    #solveBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #66ff66;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #solveBtn:hover {
+      background-color: #4cd24c;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧩 Sudoku Solver - Classic Mode</h1>
+  <div id="sudoku-grid"></div>
+  <button id="solveBtn">Solve</button>
+
+  <script>
+    const grid = document.getElementById("sudoku-grid");
+
+    let presetBoard = [
+      [5, 3, 0, 0, 7, 0, 0, 0, 0],
+      [6, 0, 0, 1, 9, 5, 0, 0, 0],
+      [0, 9, 8, 0, 0, 0, 0, 6, 0],
+      [8, 0, 0, 0, 6, 0, 0, 0, 3],
+      [4, 0, 0, 8, 0, 3, 0, 0, 1],
+      [7, 0, 0, 0, 2, 0, 0, 0, 6],
+      [0, 6, 0, 0, 0, 0, 2, 8, 0],
+      [0, 0, 0, 4, 1, 9, 0, 0, 5],
+      [0, 0, 0, 0, 8, 0, 0, 7, 9]
+    ];
+
+    let cells = [];
+    for (let i = 0; i < 81; i++) {
+      let input = document.createElement("input");
+      input.type = "text";
+      input.maxLength = 1;
+      input.id = `cell-${i}`;
+      input.oninput = () => {
+        input.value = input.value.replace(/[^1-9]/g, "");
+      };
+      grid.appendChild(input);
+      cells.push(input);
+    }
+
+    function setInitialBoard(board) {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          const index = i * 9 + j;
+          const value = board[i][j];
+          const cell = cells[index];
+          if (value !== 0) {
+            cell.value = value;
+            cell.disabled = true;
+            cell.classList.add("prefilled");
+          } else {
+            cell.value = "";
+            cell.disabled = false;
+            cell.classList.remove("prefilled");
+          }
+        }
+      }
+    }
+
+    function getBoardFromInputs() {
+      let board = [];
+      for (let i = 0; i < 9; i++) {
+        let row = [];
+        for (let j = 0; j < 9; j++) {
+          const value = cells[i * 9 + j].value;
+          row.push(value === "" ? 0 : parseInt(value));
+        }
+        board.push(row);
+      }
+      return board;
+    }
+
+    function isValid(board, row, col, num) {
+      for (let x = 0; x < 9; x++) {
+        if (board[row][x] === num || board[x][col] === num ||
+            board[3 * Math.floor(row / 3) + Math.floor(x / 3)]
+                 [3 * Math.floor(col / 3) + x % 3] === num) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function solveSudoku(board) {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            for (let num = 1; num <= 9; num++) {
+              if (isValid(board, row, col, num)) {
+                board[row][col] = num;
+                if (solveSudoku(board)) return true;
+                board[row][col] = 0;
+              }
+            }
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function updateUI(board) {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          const index = i * 9 + j;
+          const cell = cells[index];
+          if (!cell.disabled) {
+            cell.value = board[i][j];
+            cell.style.color = "#66ff66";
+          }
+        }
+      }
+    }
+
+    document.getElementById("solveBtn").addEventListener("click", () => {
+      const board = getBoardFromInputs();
+      if (solveSudoku(board)) {
+        updateUI(board);
+      } else {
+        alert("No solution found!");
+      }
+    });
+
+    window.onload = () => {
+      setInitialBoard(presetBoard);
+    };
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOM Manipulation</title>
+</head>
+<body style="background-color: #212121; color: #fff;">
+    <ul class = 'language'>
+        <li>Javascript</li>
+    </ul>
+</body>
+<script>
+    function addLang(language){
+        const li = document.createElement('li')
+        li.innerHTML = `${language}`
+        document.querySelector('.language').appendChild(li)
+    }
+    addLang("pyhton")
+    addLang("Java")
+
+    // another approach which is more optimised
+
+    function addOptiLang(language){
+        const li = document.createElement('li')
+        li.appendChild(document.createTextNode(language))
+        document.querySelector('.language').appendChild(li)
+    }
+    addOptiLang("CPP/C++")
+
+
+    // EDIT
+
+    const secLange = document.querySelector("li:nth-child(2)")
+    // secLange.innerHTML = "HTML"            // not optimised 
+    const newLi = document.createElement('li')
+    newLi.textContent = "React_JS"
+    secLange.replaceWith(newLi) 
+    
+
+    const firstLange = document.querySelector("li:nth-child(1)")
+    // firstLange.innerHTML = "HTML"            // not optimised 
+    // const new2Li = document.createElement('li')
+    // new2Li.textContent = "C#"
+    // firstLange.replaceWith(new2Li) 
+    firstLange.outerHTML = '<li>TypeScript</li>'
+
+
+    // remove
+
+    const lastLang = document.querySelector("li:nth-child(4)")
+    lastLang.remove()
+
+</script>
+</html>

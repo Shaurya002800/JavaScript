@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Maze Solver Comparison</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #121212;
+      color: #ffffff;
+      margin: 0;
+      padding: 30px;
+    }
+    h2 {
+      margin-bottom: 30px;
+      color: #ffdd57;
+    }
+    .maze-container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    .maze-wrapper {
+      background: #1e1e2e;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px #00000050;
+      text-align: center;
+    }
+    .label {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #a29bfe;
+    }
+    .maze {
+      display: grid;
+      grid-template-columns: repeat(10, 28px);
+      grid-template-rows: repeat(10, 28px);
+      gap: 2px;
+    }
+    .cell {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background-color: #2d2d3a;
+      transition: background 0.3s ease;
+    }
+    .wall { background-color: #444; }
+    .start { background-color: #00b894; }
+    .end { background-color: #d63031; }
+    .visited {
+      background-color: #3498db;
+      animation: pulse 0.3s ease-out;
+    }
+    .path {
+      background-color: #f1c40f;
+      animation: blink 0.5s alternate infinite;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.1); }
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    button {
+      margin-bottom: 30px;
+      padding: 10px 25px;
+      font-size: 16px;
+      border: none;
+      background-color: #6c5ce7;
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #a29bfe;
+    }
+  </style>
+</head>
+<body>
+  <h2>Maze Solver Comparison</h2>
+  <button onclick="solveAllMazes()">Run Solvers</button>
+  <div class="maze-container">
+    <div class="maze-wrapper">
+      <div class="label">Shortest Path (BFS)</div>
+      <div class="maze" id="maze1"></div>
+    </div>
+    <div class="maze-wrapper">
+      <div class="label">DFS Exploration</div>
+      <div class="maze" id="maze2"></div>
+    </div>
+    <div class="maze-wrapper">
+      <div class="label">Random Explore</div>
+      <div class="maze" id="maze3"></div>
+    </div>
+  </div>
+
+  <script>
+    const rows = 10, cols = 10;
+    const start = [0, 0], end = [9, 9];
+    const mazeIds = ['maze1', 'maze2', 'maze3'];
+    let mazeGrids = {}; // stores each maze's grid and DOM cells
+
+    function initMaze(id) {
+      const container = document.getElementById(id);
+      container.innerHTML = '';
+      let cells = [], grid = [];
+      for (let i = 0; i < rows; i++) {
+        grid[i] = [];
+        cells[i] = [];
+        for (let j = 0; j < cols; j++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          container.appendChild(cell);
+          grid[i][j] = Math.random() < 0.2 ? 1 : 0; // 20% walls
+          cells[i][j] = cell;
+        }
+      }
+      grid[start[0]][start[1]] = 0;
+      grid[end[0]][end[1]] = 0;
+      cells[start[0]][start[1]].classList.add('start');
+      cells[end[0]][end[1]].classList.add('end');
+      mazeGrids[id] = { grid, cells };
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function bfs(id) {
+      const { grid, cells } = mazeGrids[id];
+      const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+      const parent = Array.from({ length: rows }, () => Array(cols).fill(null));
+      const queue = [start];
+      visited[start[0]][start[1]] = true;
+
+      const directions = [[0,1],[1,0],[0,-1],[-1,0]];
+      while (queue.length) {
+        const [x, y] = queue.shift();
+        if (x === end[0] && y === end[1]) break;
+        for (let [dx, dy] of directions) {
+          let nx = x + dx, ny = y + dy;
+          if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && !visited[nx][ny] && grid[nx][ny] === 0) {
+            visited[nx][ny] = true;
+            parent[nx][ny] = [x, y];
+            queue.push([nx, ny]);
+            cells[nx][ny].classList.add('visited');
+            await sleep(20);
+          }
+        }
+      }
+
+      let path = [], cur = end;
+      while (cur && (cur[0] !== start[0] || cur[1] !== start[1])) {
+        path.push(cur);
+        cur = parent[cur[0]][cur[1]];
+      }
+      if (cur) path.push(start);
+      path.reverse();
+      for (let [x, y] of path) {
+        if (!cells[x][y].classList.contains('start') && !cells[x][y].classList.contains('end')) {
+          cells[x][y].classList.add('path');
+          await sleep(30);
+        }
+      }
+    }
+
+    async function dfs(id, x, y, visited, cells) {
+      if (x === end[0] && y === end[1]) return true;
+      visited[x][y] = true;
+      cells[x][y].classList.add('visited');
+      await sleep(25);
+
+      for (let [dx, dy] of [[0,1],[1,0],[0,-1],[-1,0]]) {
+        let nx = x + dx, ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && !visited[nx][ny] && mazeGrids[id].grid[nx][ny] === 0) {
+          if (await dfs(id, nx, ny, visited, cells)) {
+            cells[nx][ny].classList.add('path');
+            await sleep(30);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    async function randomExplore(id) {
+      const { grid, cells } = mazeGrids[id];
+      const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+      const stack = [start];
+
+      while (stack.length > 0) {
+        const [x, y] = stack.pop();
+        if (visited[x][y]) continue;
+        visited[x][y] = true;
+        cells[x][y].classList.add('visited');
+        await sleep(15);
+
+        if (x === end[0] && y === end[1]) break;
+
+        const neighbors = [[0,1],[1,0],[0,-1],[-1,0]].sort(() => Math.random() - 0.5);
+        for (let [dx, dy] of neighbors) {
+          let nx = x + dx, ny = y + dy;
+          if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && !visited[nx][ny] && grid[nx][ny] === 0) {
+            stack.push([nx, ny]);
+          }
+        }
+      }
+    }
+
+    async function solveAllMazes() {
+      mazeIds.forEach(id => initMaze(id));
+      await bfs('maze1');
+      await dfs('maze2', start[0], start[1], Array.from({ length: rows }, () => Array(cols).fill(false)), mazeGrids['maze2'].cells);
+      await randomExplore('maze3');
+    }
+
+    // Initialize all mazes on load
+    mazeIds.forEach(id => initMaze(id));
+  </script>
+</body>
+</html>
+

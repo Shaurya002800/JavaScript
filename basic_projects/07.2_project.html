@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Maze Solver Visualizer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #1e1e2f;
+      color: #f0f0f0;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      margin-bottom: 10px;
+      color: #ffda6b;
+    }
+    .maze {
+      display: grid;
+      grid-template-columns: repeat(10, 35px);
+      grid-template-rows: repeat(10, 35px);
+      gap: 2px;
+      margin-top: 20px;
+    }
+    .cell {
+      width: 35px;
+      height: 35px;
+      border-radius: 4px;
+      box-shadow: inset 0 0 2px #00000080;
+      background-color: #2e2e3e;
+      transition: background 0.3s ease;
+    }
+    .wall { background-color: #444; }
+    .start { background-color: #00b894; }
+    .end { background-color: #d63031; }
+    .visited {
+      background-color: #0984e3;
+      animation: pulse 0.3s ease-out;
+    }
+    .path {
+      background-color: #fdcb6e;
+      animation: blink 0.3s alternate infinite;
+    }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.1); }
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      border: none;
+      background-color: #6c5ce7;
+      color: #fff;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #a29bfe;
+    }
+  </style>
+</head>
+<body>
+  <h2>Maze Solver Visualizer (BFS)</h2>
+  <button onclick="solveMaze()">Solve Maze</button>
+  <div class="maze" id="maze"></div>
+
+  <script>
+    const rows = 10, cols = 10;
+    const maze = document.getElementById('maze');
+    let grid = [];
+    let start = [0, 0], end = [9, 9];
+
+    for (let i = 0; i < rows; i++) {
+      grid[i] = [];
+      for (let j = 0; j < cols; j++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.row = i;
+        cell.dataset.col = j;
+
+        cell.addEventListener('click', () => {
+          if (cell.classList.contains('start') || cell.classList.contains('end')) return;
+          cell.classList.toggle('wall');
+        });
+
+        grid[i][j] = 0;
+        maze.appendChild(cell);
+      }
+    }
+    getCell(start[0], start[1]).classList.add('start');
+    getCell(end[0], end[1]).classList.add('end');
+
+    function getCell(x, y) {
+      return document.querySelector(`.cell[data-row='${x}'][data-col='${y}']`);
+    }
+
+    async function solveMaze() {
+      const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+      const parent = Array.from({ length: rows }, () => Array(cols).fill(null));
+      const queue = [start];
+      visited[start[0]][start[1]] = true;
+
+      const directions = [[0,1], [1,0], [0,-1], [-1,0]];
+
+      while (queue.length > 0) {
+        const [x, y] = queue.shift();
+        if (x === end[0] && y === end[1]) break;
+
+        for (let [dx, dy] of directions) {
+          let nx = x + dx, ny = y + dy;
+          if (nx >= 0 && ny >= 0 && nx < rows && ny < cols &&
+              !visited[nx][ny] && !getCell(nx, ny).classList.contains('wall')) {
+            visited[nx][ny] = true;
+            parent[nx][ny] = [x, y];
+            queue.push([nx, ny]);
+            getCell(nx, ny).classList.add('visited');
+            await sleep(20);
+          }
+        }
+      }
+
+      // Backtrack and show path
+      let path = [];
+      let cur = end;
+      while (cur && (cur[0] !== start[0] || cur[1] !== start[1])) {
+        path.push(cur);
+        cur = parent[cur[0]][cur[1]];
+      }
+      if (cur) path.push(start);
+
+      for (let i = path.length - 1; i >= 0; i--) {
+        const [x, y] = path[i];
+        const cell = getCell(x, y);
+        if (!cell.classList.contains('start') && !cell.classList.contains('end')) {
+          cell.classList.remove('visited');
+          cell.classList.add('path');
+          await sleep(40);
+        }
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+  </script>
+</body>
+</html>
+
+  
